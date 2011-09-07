@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<project basedir="." default="build" name="turntable">
+	
+	<property file="build.local.properties" />
+	<property file="build.properties" />
+	
+    <property name="pickup.dir" value="../pickup"/>
+	<property name="stylus.dir" value="../stylus"/>
+	<property name="external.dir" value="../externals"/>
+	
+    <path id="junit.classpath">
+        <pathelement location="${external.dir}/junit4.7/junit-4.7.jar"/>
+        <pathelement location="${external.dir}/junit4.7/junit-dep-4.7.jar"/>
+    </path>
+	
+    <path id="jaudiotagger.classpath">
+        <pathelement location="${external.dir}/jaudiotagger/jaudiotagger-2.0.1.jar"/>
+    </path>
+	
+    <path id="pickup.classpath">
+        <pathelement location="${pickup.dir}/bin" />
+        <path refid="jaudiotagger.classpath" />
+    </path>
+	
+    <path id="stylus.classpath">
+        <pathelement location="${stylus.dir}/bin" />
+        <path refid="pickup.classpath" />
+    </path>
+	
+    <target name="clean">
+        <delete dir="${pickup.dir}/bin"/>
+    	<delete dir="${stylus.dir}/bin"/>
+    </target>
+	
+	<target name="build">
+		<mkdir dir="${pickup.dir}/bin" />
+		<javac debug="true" destdir="${pickup.dir}/bin">
+		    <src path="${pickup.dir}/src" />
+		    <classpath refid="pickup.classpath" />
+		</javac>
+		<mkdir dir="${pickup.dir}/test-bin" />
+    	<javac debug="true" destdir="${pickup.dir}/test-bin">
+		    <src path="${pickup.dir}/test" />
+		    <classpath refid="pickup.classpath" />
+			<classpath>
+		    	<pathelement location="${pickup.dir}/bin" />
+		    	<path refid="junit.classpath" />
+			</classpath>
+		</javac>
+	   	
+		<junit printsummary="on" haltonfailure="true" fork="true">
+			<sysproperty key="test.album.dir" value="${test.album.dir}" />
+			<batchtest>
+				<fileset dir="${pickup.dir}/test-bin">
+					<include name="**/*Test*.class" />
+				</fileset>
+			</batchtest>
+			<formatter type="plain" />
+			<classpath>
+				<path refid="pickup.classpath" />
+				<pathelement location="${pickup.dir}/bin" />
+		    	<path refid="junit.classpath" />
+			</classpath>
+		</junit>
+			
+		<mkdir dir="${stylus.dir}/bin" />
+		<javac debug="true" destdir="${stylus.dir}/bin">
+		    <src path="${stylus.dir}/src" />
+		    <classpath refid="stylus.classpath" />
+		</javac>
+
+		<jar destfile="turntable.jar">
+			<fileset dir="${pickup.dir}/bin" />
+			<fileset dir="${stylus.dir}/bin" />
+			<zipfileset includes="**/*.class" src="${external.dir}/jaudiotagger/jaudiotagger-2.0.1.jar" />
+
+			<manifest>
+      			<attribute name="Main-Class" value="turntable.stylus.Turntable" />
+			</manifest>
+		</jar>
+			
+	</target>
+		    	
+    <target name="run" depends="build">
+        <java classname="turntable.stylus.Turntable" failonerror="true" fork="yes">
+            <classpath refid="stylus.classpath"/>
+        </java>
+    </target>
+</project>
